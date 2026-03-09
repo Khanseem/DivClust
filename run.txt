@@ -1,0 +1,299 @@
+# DivClust on NUS HPC — Codex Handoff
+
+## Goal
+
+Reproduce the **DivClust C** row from the paper table for **CIFAR-10 only**, starting with the first dataset only.
+
+The target table section is:
+
+| D^T  |   NMI |   ACC |   ARI |
+| ---- | ----: | ----: | ----: |
+| 1.0  | 0.678 | 0.763 | 0.604 |
+| 0.95 | 0.677 | 0.760 | 0.602 |
+| 0.9  | 0.678 | 0.789 | 0.641 |
+| 0.8  | 0.724 | 0.819 | 0.681 |
+| 0.7  | 0.710 | 0.815 | 0.675 |
+
+We only want to reproduce this **for CIFAR-10** first.
+
+## Important context
+
+* NUS HPC login host works as:
+  `ssh e0538389@atlas9.nus.edu.sg`
+* The user has already confirmed SSH access works.
+* We should use the HPC cluster for runs, not the login node for long training.
+* Based on group discussion, earlier runs on HPC were much faster than laptop runs.
+* The paper table for DivClust varies **D^T** (diversity target), not K.
+* So for this reproduction, keep all other settings fixed and vary only the diversity target values:
+  `1.0, 0.95, 0.9, 0.8, 0.7`
+
+## Repository
+
+Public repo:
+`https://github.com/Khanseem/DivClust`
+
+Assume the repo should be cloned fresh on the HPC cluster unless it already exists.
+
+---
+
+## What Codex should do
+
+### 1. Clone and inspect the repo
+
+On the HPC cluster:
+
+```bash
+git clone https://github.com/Khanseem/DivClust.git
+cd DivClust
+```
+
+If the repo already exists:
+
+```bash
+cd ~/DivClust
+git pull
+```
+
+Then inspect the config and code to identify:
+
+* the main entry point
+* the preset for CIFAR-10 with CC
+* the exact config key / CLI flag for the diversity target `D^T`
+* where the output metrics are written or printed
+
+Likely files to inspect:
+
+* `README.md`
+* `main.py`
+* `configs/main_config.yaml`
+* `configs/cc_cifar10.yaml`
+* any utility or training file where metrics are logged
+
+Search suggestions:
+
+```bash
+grep -R "diversity" -n .
+grep -R "target" -n configs .
+grep -R "DT" -n .
+grep -R "NMI" -n .
+grep -R "ARI" -n .
+grep -R "ACC" -n .
+```
+
+### 2. Set up the Python environment
+
+Use the cluster module system and create a conda environment.
+
+```bash
+module load anaconda3
+source $(conda info --base)/etc/profile.d/conda.sh
+conda create -n divclust python=3.10 -y
+conda activate divclust
+```
+
+Install dependencies. Prefer one of these approaches:
+
+If there is a requirements file:
+
+```bash
+pip install -r requirements.txt
+```
+
+Otherwise install what the repo imports and needs.
+At minimum likely:
+
+```bash
+pip install torch torchvision numpy pandas scikit-learn scipy pyyaml matplotlib tqdm pillow
+```
+
+Then do a quick import test:
+
+```bash
+python - <<'PY'
+import torch, torchvision, yaml, sklearn, numpy, scipy, pandas
+print('env ok')
+print('torch', torch.__version__)
+PY
+```
+
+### 3. Verify the run command with a smoke test
+
+Find the correct command pattern from the repo.
+Likely something similar to:
+
+```bash
+python main.py --preset cc_cifar10
+```
+
+Then determine the exact way to override the diversity target.
+Examples only, do not assume until verified:
+
+```bash
+python main.py --preset cc_cifar10 --diversity_target 0.8
+python main.py --preset cc_cifar10 --DT 0.8
+```
+
+Do a very short smoke test first, such as a small number of epochs, just to verify that:
+
+* the job starts correctly
+* CIFAR-10 downloads or loads successfully
+* metrics are logged
+* outputs are saved to a known location
+
+If the repo supports overriding epochs from CLI, do:
+
+```bash
+python main.py --preset cc_cifar10 --epochs 2 <diversity-flag> 0.8
+```
+
+Replace `<diversity-flag>` with the real flag discovered from the code.
+
+### 4. Create a PBS job script for the full runs
+
+After verifying the exact command, create a PBS script that runs one experiment for one diversity target.
+
+Template:
+
+```bash
+cat > run_divclust_dt.pbs <<'EOF'
+#!/bin/bash
+#PBS -N divclust_dt
+#PBS -l select=1:ncpus=4:mem=16gb
+#PBS -l walltime=08:00:00
+
+cd $PBS_O_WORKDIR
+mkdir -p logs results
+
+module load anaconda3
+source $(conda info --base)/etc/profile.d/conda.sh
+conda activate divclust
+
+DT_SAFE=$(echo ${DT} | tr '.' '_')
+
+echo "Started DT=${DT} at $(date)"
+
+python main.py --preset cc_cifar10 --epochs 100 <diversity-flag> ${DT} \
+  > logs/divclust_dt_${DT_SAFE}.out 2>&1
+
+echo "Finished DT=${DT} at $(date)"
+EOF
+```
+
+Replace `<diversity-flag>` with the actual discovered flag or config override syntax.
+
+### 5. Submit the 5 table runs
+
+Submit one job for each diversity target:
+
+```bash
+for DT in 1.0 0.95 0.9 0.8 0.7; do
+  qsub -v DT=$DT run_divclust_dt.pbs
+done
+```
+
+These should be submitted separately so they can run independently.
+
+### 6. Track progress
+
+Useful commands:
+
+```bash
+qstat -u $USER
+ls logs
+tail -n 50 logs/divclust_dt_0_8.out
+```
+
+### 7. Extract final metrics
+
+Codex should determine from the code and logs where the final metrics are written.
+We specifically need, for each `D^T`:
+
+* NMI
+* ACC
+* ARI
+
+Collect them into a CSV and markdown table.
+
+Desired CSV format:
+
+```csv
+DT,NMI,ACC,ARI
+1.0,?, ?, ?
+0.95,?, ?, ?
+0.9,?, ?, ?
+0.8,?, ?, ?
+0.7,?, ?, ?
+```
+
+Desired markdown table:
+
+```markdown
+| D^T | NMI | ACC | ARI |
+|---|---:|---:|---:|
+| 1.0 | ? | ? | ? |
+| 0.95 | ? | ? | ? |
+| 0.9 | ? | ? | ? |
+| 0.8 | ? | ? | ? |
+| 0.7 | ? | ? | ? |
+```
+
+If metrics are only printed in logs, parse them from the log files with a small script.
+
+### 8. Save results back for the user
+
+When the runs are complete, save these artifacts in the repo directory or home directory:
+
+* `results/divclust_cifar10_repro.csv`
+* `results/divclust_cifar10_repro.md`
+* `logs/` directory containing all raw stdout/stderr logs
+* any generated plots or heatmaps if the repo creates them
+
+Compress everything for easy download:
+
+```bash
+tar -czf divclust_cifar10_results.tar.gz results logs
+```
+
+### 9. Copy results back to the local Mac
+
+From the user's local Mac terminal, run:
+
+```bash
+scp -r e0538389@atlas9.nus.edu.sg:~/DivClust/results ./results
+scp e0538389@atlas9.nus.edu.sg:~/DivClust/divclust_cifar10_results.tar.gz .
+```
+
+If the repo lives elsewhere, adjust the remote path accordingly.
+
+### 10. What Codex should report back
+
+Codex should report:
+
+* the exact environment it created
+* the exact discovered training command
+* the exact diversity target flag used
+* where the outputs were saved
+* the final extracted table for CIFAR-10 DivClust
+* any mismatch with paper numbers
+* any reproducibility caveats, such as random seed, GPU differences, or missing dependencies
+
+---
+
+## Success criteria
+
+A successful run means:
+
+1. The environment is created on NUS HPC.
+2. The repo runs from a PBS job, not just on the login node.
+3. Five runs are launched for `D^T in {1.0, 0.95, 0.9, 0.8, 0.7}`.
+4. Final CIFAR-10 metrics `NMI, ACC, ARI` are collected.
+5. Results are saved in both machine-readable and human-readable format.
+6. The result files are easy to copy back to the user's Mac.
+
+## Notes for Codex
+
+* Do not assume the diversity CLI flag name; discover it from the code.
+* Do not assume metrics file names; discover them from the code or logs.
+* Prefer reproducible commands and save intermediate evidence.
+* If a full 100-epoch run is too long or fails, first do a short validation run and then scale up.
+* Keep the CIFAR-10 / CC setup as close to the paper as possible while varying only `D^T`.
