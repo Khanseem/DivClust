@@ -1,0 +1,91 @@
+Instruction for Codex: Run Smoke Test for DivClust
+
+Your task is to verify that the DivClust training pipeline runs correctly on the NUS HPC environment before launching the full experiments.
+
+Follow these steps exactly.
+
+1. Navigate to the repository
+cd ~/DivClust
+
+If the repo does not exist yet:
+
+git clone https://github.com/Khanseem/DivClust.git
+cd DivClust
+2. Activate the environment
+module load anaconda3
+source $(conda info --base)/etc/profile.d/conda.sh
+conda activate divclust
+
+If the environment does not exist yet:
+
+conda create -n divclust python=3.10 -y
+conda activate divclust
+pip install torch torchvision scipy wandb PyYAML scikit-learn termcolor matplotlib opencv-contrib-python
+3. Run a smoke test (VERY SHORT RUN)
+
+Run only 2 epochs with a single clustering to confirm everything works.
+
+python main.py \
+  --preset cc_cifar10 \
+  --clusterings 2 \
+  --epochs 2 \
+  --NMI_target 0.8
+
+Explanation:
+
+preset cc_cifar10 → uses CIFAR-10 CC framework config
+
+clusterings 2 → very small ensemble
+
+epochs 2 → quick test
+
+NMI_target 0.8 → example diversity target 
+𝐷
+𝑇
+D
+T
+
+4. Verify the smoke test succeeded
+
+Confirm that:
+
+training starts
+
+CIFAR10 loads successfully
+
+at least 2 epochs complete
+
+metrics such as NMI / ACC / ARI appear in logs
+
+Check output:
+
+ls
+ls logs
+
+If logs exist:
+
+tail -n 50 logs/*
+5. Confirm GPU usage
+
+Run:
+
+nvidia-smi
+
+Confirm the training process appears.
+
+6. Report the results
+
+Report back:
+
+whether the run finished successfully
+
+where the output logs are saved
+
+example metric lines printed
+
+the exact command used
+
+Do NOT start full 100-epoch runs yet until the smoke test is verified.
+
+✅ Expected smoke test runtime on HPC:
+~2–5 minutes.
