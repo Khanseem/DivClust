@@ -4,7 +4,10 @@ import os
 import collections
 from utils.logger import logger_argparser
 from utils.misc import str2bool
-import wandb
+try:
+    import wandb
+except ImportError:
+    wandb = None
 import random
 
 def load_arguments(yaml_path):
@@ -135,7 +138,7 @@ def get_exp_dir(args, path=None):
         args.output_dir = './experiments/' + args.project_name
     path = path or args.output_dir
 
-    if args.entity is None and args.wandb_mode == "online":
+    if args.entity is None and args.wandb_mode == "online" and wandb is not None:
         args.entity = wandb.api.default_entity
     else:
         args.entity = "default"
@@ -144,7 +147,7 @@ def get_exp_dir(args, path=None):
         used_ids = []
     else:
         used_ids = [f for f in os.listdir(path)]
-    if args.wandb_mode=="online" and args.entity is not None:
+    if args.wandb_mode=="online" and args.entity is not None and wandb is not None:
         used_ids += [cr['run_id']
                      for cr in get_cloud_runs(args.project_name, args.entity)]
 
@@ -159,6 +162,8 @@ def get_exp_dir(args, path=None):
 
 
 def get_cloud_runs(project=None, entity=None):
+    if wandb is None:
+        return []
     api = wandb.Api()
     if project is None:
         projects = [r.path for r in api.projects(entity=entity)]
@@ -186,4 +191,3 @@ def device_argparser(args_dict=None):
     parser.add_argument(
         "--num_workers", default=args_dict.get("num_workers", 2), type=int, help="Num workers per dataloader")
     return parser
-
