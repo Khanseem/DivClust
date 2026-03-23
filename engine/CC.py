@@ -27,14 +27,45 @@ class CC(nn.Module):
         p1, p2 = F.softmax(self.clu_mlp(f1), dim=-1), F.softmax(self.clu_mlp(f2), dim=-1)
         z1, z2 = self.id_mlp(f1), self.id_mlp(f2)
 
+        
+        # loss_ce, loss_ne, loss_cc = self.CCLoss(p1, p2, z1, z2)
+        # diversity_loss, threshold, _ = self.DivLoss(torch.cat([p1, p2], dim=1), self.current_step)
+        # loss_ce_sum = sum(loss_ce) / self.args.clusterings
+        # loss_ne_sum = sum(loss_ne) / self.args.clusterings
+        # diversity_loss = diversity_loss / self.args.clusterings
+        # loss = loss_ce_sum + loss_ne_sum + loss_cc + diversity_loss
+        # self.current_step+=1
+        # return loss, {"loss_cc": loss_cc, "loss_ce": loss_ce_sum, "loss_ne": loss_ne_sum, "loss_div": diversity_loss, "threshold": threshold}
+        
         loss_ce, loss_ne, loss_cc = self.CCLoss(p1, p2, z1, z2)
         diversity_loss, threshold, _ = self.DivLoss(torch.cat([p1, p2], dim=1), self.current_step)
+
         loss_ce_sum = sum(loss_ce) / self.args.clusterings
         loss_ne_sum = sum(loss_ne) / self.args.clusterings
         diversity_loss = diversity_loss / self.args.clusterings
         loss = loss_ce_sum + loss_ne_sum + loss_cc + diversity_loss
-        self.current_step+=1
-        return loss, {"loss_cc": loss_cc, "loss_ce": loss_ce_sum, "loss_ne": loss_ne_sum, "loss_div": diversity_loss, "threshold": threshold}
+
+        # per-head main loss
+        loss_main_per_head = []
+        for k in range(self.args.clusterings):
+            loss_main_per_head.append((loss_ce[k] + loss_ne[k]).detach().item())
+
+        self.current_step += 1
+
+        metrics = {
+            "loss_cc": loss_cc,
+            "loss_ce": loss_ce_sum,
+            "loss_ne": loss_ne_sum,
+            "loss_div": diversity_loss,
+            "threshold": threshold,
+        }
+
+        for k in range(self.args.clusterings):
+            metrics[f"loss_ce_head_{k}"] = loss_ce[k].detach().item()
+            metrics[f"loss_ne_head_{k}"] = loss_ne[k].detach().item()
+            metrics[f"loss_main_head_{k}"] = loss_main_per_head[k]
+
+        return loss, metrics
 
     @torch.no_grad()
     def predict(self, x, softmax=True, return_features=False):
