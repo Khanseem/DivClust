@@ -5,7 +5,10 @@ from utils.misc import is_list_or_tuple
 from PIL import ImageFilter
 import random
 import numpy as np
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 def get_normalize(norm_mean = (0.485, 0.456, 0.406), norm_std = (0.228, 0.224, 0.225)):
     return T.Compose([T.ToTensor(), T.Normalize(mean=norm_mean, std=norm_std)])
@@ -31,6 +34,8 @@ class CVGaussianBlur:
 
     def __call__(self, sample):
         sample = np.array(sample)
+        if cv2 is None:
+            return sample
         prob = np.random.random_sample()
         if prob < 0.5:
             sigma = (self.max - self.min) * np.random.random_sample() + self.min
