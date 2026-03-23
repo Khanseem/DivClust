@@ -1,5 +1,5 @@
 import numpy as np
-from torchvision.datasets import CIFAR10, CIFAR100
+from torchvision.datasets import CIFAR10, CIFAR100, FashionMNIST
 from utils.misc import export_fn
 import glob
 import os
@@ -57,6 +57,31 @@ def get_cifar100(dataset_path, get_partition=("train", "val", "merge"), supercla
         return_list += [val_data, val_labels]
     if "merge" in get_partition:
         merged_data = np.concatenate((train_data.data, val_data.data))
+        merged_labels = np.concatenate((train_labels, val_labels))
+        return_list += [merged_data, merged_labels]
+    return return_list
+
+### FashionMNIST ###
+
+@export_fn
+def get_fashion_mnist(dataset_path, get_partition=("train", "val", "merge")):
+    if dataset_path is None:
+        dataset_path = './datasets/FashionMNIST/'
+    if "train" in get_partition or "merge" in get_partition:
+        dtrain = FashionMNIST(dataset_path, train=True, download=True)
+        train_data = dtrain.data.numpy()
+        train_labels = np.array(dtrain.targets)
+    if "val" in get_partition or "merge" in get_partition:
+        dval = FashionMNIST(dataset_path, train=False, download=True)
+        val_data = dval.data.numpy()
+        val_labels = np.array(dval.targets)
+    return_list = []
+    if "train" in get_partition:
+        return_list += [train_data, train_labels]
+    if "val" in get_partition:
+        return_list += [val_data, val_labels]
+    if "merge" in get_partition:
+        merged_data = np.concatenate((train_data, val_data))
         merged_labels = np.concatenate((train_labels, val_labels))
         return_list += [merged_data, merged_labels]
     return return_list

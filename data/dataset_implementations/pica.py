@@ -18,3 +18,8 @@ def cifar10_pica(dataset_path=None, transforms_no=3, *args, **kwargs):
     data, labels = dataset_readers.get_cifar10(dataset_path, ["merge"])
     train_dataset, val_dataset = _get_pica_datasets(data, labels, 40, 32, (0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261), transforms_no=transforms_no)
     return train_dataset, val_dataset
+
+def fashion_mnist_pica(dataset_path=None, transforms_no=3, *args, **kwargs):
+    data, labels = dataset_readers.get_fashion_mnist(dataset_path, ["merge"])
+    train_dataset, val_dataset = _get_pica_datasets(data, labels, 32, 28, (0.5, 0.5, 0.5), (0.5, 0.5, 0.5), transforms_no=transforms_no)
+    return train_dataset, val_dataset

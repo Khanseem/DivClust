@@ -54,6 +54,8 @@ class ImageReader:
             image = self.tensor2PIL(image)
         else:
             image = Image.fromarray(image)
+        if image.mode != "RGB":
+            image = image.convert("RGB")
 
         if self.annotations is not None:
             annotation = int(self.annotations[index])
@@ -67,5 +69,4 @@ def load_image(path):
     with open(path, 'rb') as f:
         img = Image.open(f)
         return img.convert('RGB')
-
 

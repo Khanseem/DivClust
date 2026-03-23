@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -N divclust_fmnist_20e
+#PBS -l select=1:ncpus=8:ngpus=1:mem=32gb
+#PBS -l walltime=02:00:00
+#PBS -j oe
+#PBS -o logs/divclust_fmnist_20e.out
+
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+mkdir -p logs
+
+# Load your Vanda environment here (adjust if needed)
+# module purge
+# module load anaconda3
+# source activate divclust_env
+
+python3 main.py \
+  --preset cc_fashionmnist \
+  --dataset_path "${DATASET_PATH:-./data_folder/FashionMNIST}" \
+  --epochs "${EPOCHS:-20}" \
+  --gpu "${GPU:-0}" \
+  --gpus "${GPU:-0}" \
+  --wandb_mode off
