@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -q auto
+#PBS -l select=1:ngpus=1
+#PBS -l walltime=00:03:00
+#PBS -N divclust_c_metrics
+#PBS -o hpc_results/output_divclust_c.log
+#PBS -e hpc_results/error_divclust_c.log
+
+cd /scratch/e1536052/DivClust
+source divclust_env/bin/activate
+
+python metrics_divclust_c_gpu.py
