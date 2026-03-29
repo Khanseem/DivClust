@@ -23,14 +23,18 @@ METRIC_KEYS = [
 ]
 
 HEATMAP_COLUMNS = [
-    "CNF",
-    "Mean_ACC",
-    "Max_ACC",
-    "Mean_NMI",
-    "DivClust_NMI",
-    "DivClust_ACC",
-    "DivClust_ARI",
+    "CNF (%)",
+    "Mean_ACC (%)",
+    "Max_ACC (%)",
+    "Mean_NMI (%)",
+    "DivClust_NMI (%)",
+    "DivClust_ACC (%)",
+    "DivClust_ARI (%)",
 ]
+
+# Convert all heatmap metrics to percentage for consistent coloring.
+# ACC metrics are already in percentage and keep scale factor 1.
+HEATMAP_PERCENT_SCALES = np.array([100.0, 1.0, 1.0, 100.0, 100.0, 1.0, 100.0], dtype=np.float64)
 
 
 @dataclass
@@ -290,25 +294,27 @@ def plot_accuracy_curves(output_dir: Path, curves: Dict[str, List[Tuple[int, flo
 def plot_heatmap(output_dir: Path, summaries: List[RunSummary]) -> Path:
     out_png = output_dir / "simulation_heatmap.png"
     dts = [r.dt for r in summaries]
-    matrix = np.array(
+    raw_matrix = np.array(
         [
             [r.cnf, r.mean_acc, r.max_acc, r.mean_nmi, r.divclust_nmi, r.divclust_acc, r.divclust_ari]
             for r in summaries
         ],
         dtype=np.float64,
     )
+    matrix = raw_matrix * HEATMAP_PERCENT_SCALES.reshape(1, -1)
 
     plt.figure(figsize=(11, max(3.8, 0.55 * len(dts))))
     im = plt.imshow(matrix, aspect="auto", cmap="viridis")
-    plt.colorbar(im, fraction=0.04, pad=0.02)
+    cbar = plt.colorbar(im, fraction=0.04, pad=0.02)
+    cbar.set_label("Metric value (%)")
     plt.xticks(np.arange(len(HEATMAP_COLUMNS)), HEATMAP_COLUMNS, rotation=25, ha="right")
     plt.yticks(np.arange(len(dts)), [f"DT={dt}" for dt in dts])
-    plt.title("Fashion-MNIST DivClust Sweep Simulation Heatmap")
+    plt.title("Fashion-MNIST DivClust Sweep Simulation Heatmap (All Metrics in %)")
 
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
             val = matrix[i, j]
-            text = "nan" if np.isnan(val) else f"{val:.3f}"
+            text = "nan" if np.isnan(val) else f"{val:.1f}"
             plt.text(j, i, text, ha="center", va="center", fontsize=8, color="white")
 
     plt.tight_layout()
