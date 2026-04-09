@@ -24,6 +24,31 @@ This folder is a self-contained bundle of the Fashion-MNIST DivClust sweep execu
 - Combined metrics graph: `results/plots/all_metrics_same_graph.png`
 - Accuracy-vs-epoch: `results/plots/accuracy_vs_epoch.png`
 - Simulation heatmap: `results/plots/simulation_heatmap.png`
+- Teammate-feedback response note: `TEAMMATE_FEEDBACK_RESPONSE_2026-03-30.md`
+- Feedback-focused outputs: `results/feedback_review/`
+  - D^T vs D^R summary: `fmnist_sweep_with_dr_summary.csv` / `.md`
+  - Paper-style comparison table (`D^T=0.7`): `paper_comparison_dt_0_7.csv` / `.md`
+  - Paper-vs-simulation overlap table: `paper_vs_simulation_overlap_targets.csv`
+  - D^T vs D^R plot: `plots/dt_vs_dr_target_alignment.png`
+  - Paper-style inter-clustering heatmaps (one per target): `plots/inter_cluster_nmi_heatmap_dt_*.png`
+  - Paper-vs-simulation metric plot panel: `plots/paper_vs_simulation_overlap_metrics.png`
+
+## CIFAR10-matched FMNIST preset (new)
+
+To run Fashion-MNIST with the same core hyperparameters as `cc_cifar10` and only `epochs=100`:
+
+- Root preset: `configs/cc_fashionmnist_cifar10_matched_e100.yaml`
+- Artifact copy: `configs/cc_fashionmnist_cifar10_matched_e100.yaml`
+- PBS job: `run_assets/run_fmnist_cifar10_matched_e100.pbs`
+- Submit helper: `run_assets/submit_fmnist_cifar10_matched_e100.sh`
+
+This matched preset uses:
+
+- `backbone: resnet34`
+- `crop_size: 224`
+- `eval_interval: 10`
+- `clusterings: 1`
+- `epochs: 100`
 
 ## Runtime
 

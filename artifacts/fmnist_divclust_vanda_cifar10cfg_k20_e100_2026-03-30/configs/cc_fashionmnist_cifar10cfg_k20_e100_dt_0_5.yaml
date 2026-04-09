@@ -1,0 +1,22 @@
+clustering_framework: cc
+project_name: deep_clustering
+group: fashion_mnist_cifar10cfg_k20
+run_name: CC_FMNIST_C10CFG_K20_E100_DT_0_5
+dataset: fashion_mnist
+dataset_path: "./data_folder/FashionMNIST"
+backbone: resnet34
+proj_dim: 128
+optimizer: adam
+lr: 0.0003
+weight_decay: 0.
+epochs: 100
+eval_interval: 10
+crop_size: 224
+batch_size: 256
+clusters: 10
+clusterings: 20
+NMI_target: 0.5
+NMI_interval: 20
+threshold_rate: 0.99
+divclust_mbank_size: 10000
+

@@ -244,8 +244,8 @@ class MetricHandler:
     def add_metrics(self, metrics_dict: dict):
         for k, v in metrics_dict.items():
             if k not in self.metrics.keys():
-                self.metrics[k] = {"value": v, "count": torch.ones(
-                    (1,), device=torch.cuda.current_device())}
+                count_device = v.device if isinstance(v, torch.Tensor) else torch.device("cpu")
+                self.metrics[k] = {"value": v, "count": torch.ones((1,), device=count_device)}
             else:
                 self.metrics[k]["value"] += v
                 self.metrics[k]["count"] += 1
@@ -254,7 +254,7 @@ class MetricHandler:
         metric_averages = {}
         for k, v in self.metrics.items():
             if not isinstance(v["value"], torch.Tensor):
-                k_value = torch.tensor(v["value"], device=torch.cuda.current_device())
+                k_value = torch.tensor(v["value"], device=v["count"].device)
             else:
                 k_value = v["value"].clone().detach()
             k_count = v["count"].clone()
