@@ -1,0 +1,30 @@
+#!/bin/bash
+#PBS -P personal-e0538389
+#PBS -q auto
+#PBS -N fmnist_e100
+#PBS -l select=1:ngpus=1
+#PBS -l walltime=05:00:00
+#PBS -j oe
+#PBS -k oed
+
+set -euo pipefail
+cd /scratch/e0538389/DivClust
+mkdir -p logs
+
+source /scratch/e0538389/venv_divclust_pip/bin/activate
+export PYTHONUNBUFFERED=1
+
+DT_SAFE=$(echo "${DT}" | tr '.' '_')
+RUN_NAME="CC_FMNIST_E100_DT_${DT_SAFE}"
+LOG_FILE="logs/fmnist_e100_dt_${DT_SAFE}.out"
+
+echo "START $(date) DT=${DT} RUN_NAME=${RUN_NAME}" | tee "${LOG_FILE}"
+python main.py \
+  --preset cc_fashionmnist \
+  --epochs 100 \
+  --NMI_target "${DT}" \
+  --run_name "${RUN_NAME}" \
+  --wandb_mode off \
+  >> "${LOG_FILE}" 2>&1
+
+echo "END $(date) DT=${DT} RUN_NAME=${RUN_NAME}" | tee -a "${LOG_FILE}"

@@ -3,22 +3,35 @@ import time
 import warnings
 import torch
 import torch.distributed as dist
-import wandb
-import matplotlib
-import matplotlib.pyplot as plt
+try:
+    import wandb
+except ImportError:
+    wandb = None
 import os
 import numpy as np
 import os
 import sys
 import logging
 import functools
-from termcolor import colored
+try:
+    from termcolor import colored
+except ImportError:
+    def colored(msg, *args, **kwargs):
+        return msg
 import argparse
 import traceback
 
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+except ImportError:
+    matplotlib = None
+    plt = None
+
 os.environ['WANDB_START_METHOD'] = "thread"
 os.environ['WANDB_SILENT'] = "true"
-warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
+if matplotlib is not None and hasattr(matplotlib, "cbook") and hasattr(matplotlib.cbook, "mplDeprecation"):
+    warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
 
 def logger_argparser(args_dict=None):
@@ -59,6 +72,8 @@ class Logger:
         self.wandb_mode = args.wandb_mode
         self.resume = args.resume
         self.args = args
+        if wandb is None and self.wandb_mode != "off":
+            self.wandb_mode = "off"
 
         self.config_dict = args.__dict__
         if not os.path.exists(self.output_dir):
@@ -229,8 +244,8 @@ class MetricHandler:
     def add_metrics(self, metrics_dict: dict):
         for k, v in metrics_dict.items():
             if k not in self.metrics.keys():
-                self.metrics[k] = {"value": v, "count": torch.ones(
-                    (1,), device=torch.cuda.current_device())}
+                count_device = v.device if isinstance(v, torch.Tensor) else torch.device("cpu")
+                self.metrics[k] = {"value": v, "count": torch.ones((1,), device=count_device)}
             else:
                 self.metrics[k]["value"] += v
                 self.metrics[k]["count"] += 1
@@ -239,7 +254,7 @@ class MetricHandler:
         metric_averages = {}
         for k, v in self.metrics.items():
             if not isinstance(v["value"], torch.Tensor):
-                k_value = torch.tensor(v["value"], device=torch.cuda.current_device())
+                k_value = torch.tensor(v["value"], device=v["count"].device)
             else:
                 k_value = v["value"].clone().detach()
             k_count = v["count"].clone()
@@ -294,4 +309,3 @@ def convert_time(t):
     m = int((t - h * 3600) // 60)
     s = str(h).zfill(2) + ":" + str(m).zfill(2)
     return s
-

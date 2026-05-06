@@ -13,19 +13,23 @@ import os
 import resource
 
 def main(args, logger):
-    torch.cuda.set_device(args.gpu)
+    use_cuda = torch.cuda.is_available() and not (isinstance(args.gpu, str) and args.gpu.lower() == "cpu") and not (isinstance(args.gpu, int) and args.gpu < 0)
+    device = torch.device(f"cuda:{args.gpu}" if use_cuda else "cpu")
+    args.device = device
+    if use_cuda:
+        torch.cuda.set_device(args.gpu)
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
 
     logger.print("Loading data")
     dataset_train, dataset_val = build_dataset(args.clustering_framework, args.dataset, args.dataset_path, args)
-    train_dataloader = DataLoader(dataset_train, num_workers=args.num_workers,pin_memory=True, batch_size=args.batch_size, shuffle=True, drop_last=True)
-    val_dataloader = DataLoader(dataset_val, num_workers=args.num_workers,pin_memory=True, batch_size=args.batch_size, shuffle=False, drop_last=False)
+    train_dataloader = DataLoader(dataset_train, num_workers=args.num_workers, pin_memory=use_cuda, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    val_dataloader = DataLoader(dataset_val, num_workers=args.num_workers, pin_memory=use_cuda, batch_size=args.batch_size, shuffle=False, drop_last=False)
 
     logger.print("Loading model")
     model = build_model(args)
-    model.to("cuda")
+    model.to(device)
 
     train_steps = len(train_dataloader)*args.epochs
     optimizer = build_optimizer(model, train_steps, args)

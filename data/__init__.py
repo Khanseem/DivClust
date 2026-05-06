@@ -8,6 +8,8 @@ def build_dataset(clustering_framework: str, data: str, dataset_path:str, args):
             return cc.cifar10_cc(dataset_path, args.crop_size)
         elif data.lower()=="cifar100":
             return cc.cifar100_cc(dataset_path, args.crop_size)
+        elif data.lower()=="fashion_mnist":
+            return cc.fashion_mnist_cc(dataset_path, args.crop_size)
         elif data.lower()=="imagenet_dogs":
             return cc.imagenet_dogs_cc(dataset_path, args.crop_size)
         elif data.lower()=="imagenet_10":
@@ -16,6 +18,8 @@ def build_dataset(clustering_framework: str, data: str, dataset_path:str, args):
         from data.dataset_implementations import pica
         if data.lower()=="cifar10":
             return pica.cifar10_pica(dataset_path)
+        elif data.lower()=="fashion_mnist":
+            return pica.fashion_mnist_pica(dataset_path)
     raise ValueError("Unknown dataset")
 
 

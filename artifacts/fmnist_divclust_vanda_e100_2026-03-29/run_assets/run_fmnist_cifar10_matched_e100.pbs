@@ -1,0 +1,26 @@
+#!/bin/bash
+#PBS -P personal-e0538389
+#PBS -q auto
+#PBS -N fmnist_c10cfg_e100
+#PBS -l select=1:ngpus=1
+#PBS -l walltime=05:00:00
+#PBS -j oe
+#PBS -k oed
+
+set -euo pipefail
+cd /scratch/e0538389/DivClust
+mkdir -p logs
+
+source /scratch/e0538389/venv_divclust_pip/bin/activate
+export PYTHONUNBUFFERED=1
+
+RUN_NAME="${RUN_NAME:-CC_FMNIST_CIFAR10_MATCHED_E100}"
+LOG_FILE="logs/${RUN_NAME}.out"
+
+echo "START $(date) RUN_NAME=${RUN_NAME}" | tee "${LOG_FILE}"
+python main.py \
+  --preset cc_fashionmnist_cifar10_matched_e100 \
+  --run_name "${RUN_NAME}" \
+  --wandb_mode off \
+  >> "${LOG_FILE}" 2>&1
+echo "END $(date) RUN_NAME=${RUN_NAME}" | tee -a "${LOG_FILE}"

@@ -28,6 +28,11 @@ def cifar100_cc(dataset_path=None, crop_size=224, *args, **kwargs):
     train_dataset, val_dataset = _get_cc_datasets(data, labels, crop_size, blur=False)
     return train_dataset, val_dataset
 
+def fashion_mnist_cc(dataset_path=None, crop_size=32, *args, **kwargs):
+    data, labels = dataset_readers.get_fashion_mnist(dataset_path, ["merge"])
+    train_dataset, val_dataset = _get_cc_datasets(data, labels, crop_size, blur=False)
+    return train_dataset, val_dataset
+
 
 
 def imagenet_dogs_cc(dataset_path=None, crop_size=224, *args, **kwargs):

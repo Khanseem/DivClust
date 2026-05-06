@@ -1,0 +1,25 @@
+#!/bin/bash
+#PBS -N fmnist_c10cfg_e100
+#PBS -q auto
+#PBS -l select=1:ngpus=1
+#PBS -l walltime=05:00:00
+#PBS -j oe
+
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+mkdir -p hpc_results/vanda/logs_fashionmnist
+
+module purge
+export PYTHONNOUSERSITE=1
+PYTHON_BIN="${PYTHON_BIN:-$HOME/.conda/miniconda/4.9/envs/divclust/bin/python}"
+RUN_NAME="${RUN_NAME:-CC_FMNIST_CIFAR10_MATCHED_E100}"
+
+"${PYTHON_BIN}" main.py \
+  --preset cc_fashionmnist_cifar10_matched_e100 \
+  --dataset_path "${DATASET_PATH:-./data_folder/FashionMNIST}" \
+  --gpu "${GPU:-0}" \
+  --gpus "${GPU:-0}" \
+  --run_name "${RUN_NAME}" \
+  --wandb_mode off \
+  > "hpc_results/vanda/logs_fashionmnist/${RUN_NAME}.out" 2>&1

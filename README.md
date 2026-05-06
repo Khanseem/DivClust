@@ -34,6 +34,18 @@ For example, to run an experiment with the CC deep clustering framework with 2 c
 python main.py --preset cc_cifar10 --clusterings 2 --NMI_target 0.8
 ```
 
+To run Fashion-MNIST with DivClust for a quick 20-epoch validation:
+
+```
+python main.py --preset cc_fashionmnist
+```
+
+To run Fashion-MNIST with CIFAR10-matched core settings (same as `cc_cifar10`, but `epochs=100`):
+
+```
+python main.py --preset cc_fashionmnist_cifar10_matched_e100
+```
+
 ## See also
 [Original implementation of CC](https://github.com/Yunfan-Li/Contrastive-Clustering)
 

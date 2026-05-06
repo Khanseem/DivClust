@@ -14,14 +14,15 @@ class Trainer:
         self.optimizer = optimizer
         self.args = args
         self.logger = logger
-        self.device = args.gpu
+        self.device = getattr(args, "device", torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        self.use_cuda = self.device.type == "cuda"
 
-        self.scaler = GradScaler()
         self.mixed_precision = args.__dict__.get("mixed_precision", True)
+        self.scaler = GradScaler(enabled=self.use_cuda and self.mixed_precision)
         self.logger.print(f"Mixed precision: {'ON' if self.mixed_precision else 'OFF'}")
 
     def train_epoch(self, train_dataloader, eval_dataloader, print_interval=25, eval=True):
-        device = self.args.gpu
+        device = self.device
         self.model.train()
 
         epoch_steps = len(train_dataloader)
@@ -33,12 +34,12 @@ class Trainer:
             if self.args.clustering_framework == "pica":
                 samples_weak = samples[0].to(device,non_blocking=True)
                 samples_strong = torch.cat(samples[1:],dim=0).to(device,non_blocking=True)
-                with autocast(self.mixed_precision):
+                with autocast(enabled=self.use_cuda and self.mixed_precision):
                     loss, metrics_dict = self.model(samples_weak, samples_strong)
             elif self.args.clustering_framework == "cc":
                 v1 = samples[:, 0].to(device,non_blocking=True)
                 v2 = samples[:, 1].to(device,non_blocking=True)
-                with autocast(self.mixed_precision):
+                with autocast(enabled=self.use_cuda and self.mixed_precision):
                     loss, metrics_dict = self.model(v1, v2)
 
             self.scaler.scale(loss).backward()
@@ -63,7 +64,7 @@ class Trainer:
                     if step % 25 == 0:
                         self.logger.print(f"Eval. step {step} of {len(eval_dataloader)}")
                     index, x, target = batch
-                    x = x.cuda(self.device)
+                    x = x.to(self.device, non_blocking=True)
                     preds = self.model.predict(x)
                     confidence += preds.max(-1)[0].sum(-1).mean()
                     samples += x.shape[0]
